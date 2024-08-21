@@ -1,3 +1,4 @@
+---@class UI : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 local UI = LibStub("AceAddon-3.0"):NewAddon("UI", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
 
 -- /console taintLog 1
@@ -9,22 +10,39 @@ local UI = LibStub("AceAddon-3.0"):NewAddon("UI", "AceConsole-3.0", "AceEvent-3.
 -- Modules
 --------------------------------------------------------------------------------
 
+---@class ActionBars : AceModule
 local ActionBars = UI:NewModule("ActionBars")
+---@class Paging : AceModule
 local Paging = UI:NewModule("Paging")
+---@class PetActionBar : AceModule
 local PetActionBar = UI:NewModule("PetActionBar")
+---@class StanceBar : AceModule
 local StanceBar = UI:NewModule("StanceBar")
+---@class Chat : AceModule
 local Chat = UI:NewModule("Chat")
+---@class StatusTrackingBar : AceModule
 local StatusTrackingBar = UI:NewModule("StatusTrackingBar")
+---@class PlayerFrame : AceModule
 local PlayerFrame = UI:NewModule("PlayerFrame")
+---@class FocusFrame : AceModule
 local FocusFrame = UI:NewModule("FocusFrame")
+---@class PetFrame : AceModule
 local PetFrame = UI:NewModule("PetFrame")
+---@class TargetFrame : AceModule
 local TargetFrame = UI:NewModule("TargetFrame")
+---@class Minimap : AceModule
 local Minimap = UI:NewModule("Minimap")
+---@class Layouts : AceModule
 local Layouts = UI:NewModule("Layouts")
+---@class Bags : AceModule
 local Bags = UI:NewModule("Bags")
+---@class Menu : AceModule
 local Menu = UI:NewModule("Menu")
+---@class BuffFrame : AceModule
 local BuffFrame = UI:NewModule("BuffFrame")
+---@class DebuffFrame : AceModule
 local DebuffFrame = UI:NewModule("DebuffFrame")
+---@class Tooltips : AceModule
 local Tooltips = UI:NewModule("Tooltips")
 
 --------------------------------------------------------------------------------
@@ -1118,7 +1136,7 @@ end
 function UI:Unregister(Frame, state)
 
     if not self:IsLocked(Frame) then
-        UnregisterAttributeDriver(Frame, "state-" .. state, condition)
+        UnregisterAttributeDriver(Frame, "state-" .. state)
     end
 
 end
@@ -1171,7 +1189,10 @@ function UI:HasRoot(Frame, root)
 end
 
 function UI:OnLeave(root, callback, ...)
-    local focus = GetMouseFocus()
+    -- The returned table will contain multiple regions in the case where objects at the top of the stack are configured for mouse input propagation.
+    -- The order of results in the table is such that the topmost region will be at index 1, and the bottommost region will be at the last index in the table.
+    local focusRegions = GetMouseFoci()
+    local focus = focusRegions[1]
 
     if not self:HasRoot(focus, root) then
         callback(...)
@@ -1211,13 +1232,16 @@ function ActionBars:Enable()
         ActionBars:Register()
     end)
 
-    UI:SecureHookScript(SpellBookFrame, "OnShow", function()
-        ActionBars:Show()
-        ActionBars:Lock()
-    end)
-    UI:SecureHookScript(SpellBookFrame, "OnHide", function()
-        ActionBars:Unlock()
-        ActionBars:Register()
+    EventUtil.ContinueOnAddOnLoaded('Blizzard_PlayerSpells', function ()
+        UI:SecureHookScript(PlayerSpellsFrame, "OnShow", function()
+            ActionBars:Show()
+            ActionBars:Lock()
+        end)
+
+        UI:SecureHookScript(PlayerSpellsFrame, "OnHide", function()
+            ActionBars:Unlock()
+            ActionBars:Register()
+        end)
     end)
 
     UI:Event("PLAYER_ENTERING_WORLD", function()
@@ -1279,8 +1303,14 @@ function ActionBars:Enable()
 end
 
 function ActionBars:Disable()
-    self:Show(actionBarsEnabled)
-    self:Hide(actionBarsDisabled)
+    -- TODO: These are accidental globals that the original author Alberto Beloni put here
+    -- the ActionBars:Show and ActionBars:Hide function thus always used self.actionBarsEnabled as a fallback since nil was passed through undefined globals.
+    -- I've commented them out in case some other addon actually has these variables defined, as it could cause problems.
+    -- remove these commented out lines at some point after further testing.
+    --self:Show(actionBarsEnabled)
+    --self:Hide(actionBarsDisabled)
+    self:Show()
+    self:Hide()
 end
 
 function ActionBars:Update()
@@ -1402,7 +1432,7 @@ function ActionBars:Unregister(actionBars)
         local condition = UI:GetOption(actionBar .. "Condition")
 
         if condition ~= "" then
-            UI:Unregister(ActionBar, "visibility", condition)
+            UI:Unregister(ActionBar, "visibility")
         end
 
     end
@@ -2574,8 +2604,8 @@ function Menu:Enable()
 
     self.components = {
         CharacterMicroButton,
-        SpellbookMicroButton,
-        TalentMicroButton,
+        ProfessionMicroButton,
+        PlayerSpellsMicroButton,
         AchievementMicroButton,
         QuestLogMicroButton,
         GuildMicroButton,
