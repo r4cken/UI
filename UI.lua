@@ -2357,7 +2357,9 @@ function Minimap:Enable()
         MinimapCluster.BorderTop,
         MinimapCluster.Tracking,
         MinimapCluster.ZoneTextButton,
+        MinimapCluster.InstanceDifficulty,
         TimeManagerClockButton,
+        AddonCompartmentFrame,
         GameTimeFrame
     }
 
